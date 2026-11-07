@@ -1,0 +1,16 @@
+import { createFileRoute } from "@tanstack/react-router";
+
+async function handle(request: Request) {
+  const { checkSecret, runProcess } = await import("@/lib/engine.server");
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
+  try {
+    if (!checkSecret(token)) return Response.json({ error: "Unauthorized" }, { status: 401 });
+    return Response.json({ ok: true, ...(await runProcess()) });
+  } catch (e) {
+    return Response.json({ ok: false, error: (e as Error).message }, { status: 500 });
+  }
+}
+
+export const Route = createFileRoute("/api/public/cron/process")({
+  server: { handlers: { GET: ({ request }) => handle(request), POST: ({ request }) => handle(request) } },
+});
